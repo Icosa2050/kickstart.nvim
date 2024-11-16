@@ -86,12 +86,19 @@ P.S. You can delete this when you're done too. It's your config now! :)
 
 -- Set <space> as the leader key
 -- See `:help mapleader`
+-- disable netrw at the very start of your init.lua
+--  NOTE: for Nvim Tree
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
+-- optionally enable 24-bit colour
+vim.opt.termguicolors = true
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -227,7 +234,17 @@ vim.opt.rtp:prepend(lazypath)
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
-
+  -- flutter
+  'dart-lang/dart-vim-plugin',
+  'thosakwe/vim-flutter',
+  'natebosch/vim-lsc',
+  'natebosch/vim-lsc-dart',
+  'nvim-lua/plenary.nvim', --required for flutter tools
+  'stevearc/dressing.nvim', -- optional for vim.ui.select
+  'nvim-lua/plenary.nvim', --required for flutter-tools
+  'mfussenegger/nvim-dap',
+  'akinsho/flutter-tools.nvim',
+  'kyazdani42/nvim-tree.lua',
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
   -- keys can be used to configure plugin behavior/loading/etc.
@@ -908,5 +925,111 @@ require('lazy').setup({
   },
 })
 
+require('lazy').setup {
+  {
+    'akinsho/flutter-tools.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim', 'stevearc/dressing.nvim' },
+    config = function()
+      require('flutter-tools').setup {
+        -- (uncomment below line for windows only)
+        -- flutter_path = "home/flutter/bin/flutter.bat",
+
+        debugger = {
+          -- make these two params true to enable debug mode
+          enabled = true,
+          run_via_dap = true,
+          register_configurations = function(_)
+            --             require("dap").adapters.dart = {
+            --              type = "executable",
+            --               command = vim.fn.stdpath("data") .. "/mason/bin/dart-debug-adapter",
+            --              args = {"flutter"}
+            --           }
+
+            require('dap').configurations.dart = {
+              {
+                type = 'dart',
+                request = 'launch',
+                name = 'Launch flutter',
+                dartSdkPath = '$HOME/flutter/bin/cache/dart-sdk/',
+                flutterSdkPath = '$HOME/flutter',
+                program = '${workspaceFolder}/lib/main.dart',
+                cwd = '${workspaceFolder}',
+              },
+            }
+            -- uncomment below line if you've launch.json file already in your vscode setup
+            require('dap.ext.vscode').load_launchjs()
+          end,
+        },
+        dev_log = {
+          -- toggle it when you run without DAP
+          enabled = true,
+          open_cmd = 'tabedit',
+        },
+        --lsp = {
+        -- on_attach = require('lvim.lsp').common_on_attach,
+        --capabilities = require('lvim.lsp').default_capabilities,
+        --},
+      }
+    end,
+  },
+}
+vim.keymap.set('n', '<F5>', function()
+  require('dap').continue()
+end)
+vim.keymap.set('n', '<F10>', function()
+  require('dap').step_over()
+end)
+vim.keymap.set('n', '<F11>', function()
+  require('dap').step_into()
+end)
+vim.keymap.set('n', '<F12>', function()
+  require('dap').step_out()
+end)
+vim.keymap.set('n', '<Leader>b', function()
+  require('dap').toggle_breakpoint()
+end)
+vim.keymap.set('n', '<Leader>B', function()
+  require('dap').set_breakpoint()
+end)
+vim.keymap.set('n', '<Leader>lp', function()
+  require('dap').set_breakpoint(nil, nil, vim.fn.input 'Log point message: ')
+end)
+vim.keymap.set('n', '<Leader>dr', function()
+  require('dap').repl.open()
+end)
+vim.keymap.set('n', '<Leader>dl', function()
+  require('dap').run_last()
+end)
+vim.keymap.set({ 'n', 'v' }, '<Leader>dh', function()
+  require('dap.ui.widgets').hover()
+end)
+vim.keymap.set({ 'n', 'v' }, '<Leader>dp', function()
+  require('dap.ui.widgets').preview()
+end)
+vim.keymap.set('n', '<Leader>df', function()
+  local widgets = require 'dap.ui.widgets'
+  widgets.centered_float(widgets.frames)
+end)
+vim.keymap.set('n', '<Leader>ds', function()
+  local widgets = require 'dap.ui.widgets'
+  widgets.centered_float(widgets.scopes)
+end)
+require('nvim-tree').setup()
+
+--NOTE:rinit nvim with defaults
+require('nvim-tree').setup {
+  sort = {
+    sorter = 'case_sensitive',
+  },
+  view = {
+    width = 30,
+  },
+  renderer = {
+    group_empty = true,
+  },
+  filters = {
+    dotfiles = true,
+  },
+}
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
